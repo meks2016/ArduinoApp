@@ -16,11 +16,13 @@ import com.apps.meks.arduinoapp.driver.UsbSerialPort;
 import com.apps.meks.arduinoapp.driver.UsbSerialProber;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private EditText eingabeEditText;
     private TextView ausgabeTextView;
+    private TextView ausgabeTextView2;
     private Button sendButton;
     private Button sendAButton;
     private final String TAG = MainActivity.class.getSimpleName();
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         eingabeEditText = (EditText) findViewById(R.id.eingabe);
         ausgabeTextView = (TextView) findViewById(R.id.ausgabeTextView);
+        ausgabeTextView2 = (TextView) findViewById(R.id.ausgabe2TextView);
         sendButton = (Button) findViewById(R.id.sendButton);
         sendAButton = (Button) findViewById(R.id.sendAButton);
 
@@ -68,13 +71,25 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        //ERM
+        String userInput = "A";
+        byte[] b = new byte[0];
+        try {
+            b = userInput.getBytes("US-ASCII");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        ausgabeTextView2.setText(String.valueOf(b));
 
-        byte[] b = new byte['A'];
+
+        //byte[] b = new byte['A'];
+
         try{
             UsbSerialPort port = driver.getPorts().get(0);
             port.open(connection);
             port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
             port.write(b,1);
+
             byte buffer[] = new byte[16];
             int numBytesRead = port.read(buffer, 1);
 
