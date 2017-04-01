@@ -5,11 +5,11 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ListView;
 
 import com.apps.meks.arduinoapp.driver.UsbSerialDriver;
 import com.apps.meks.arduinoapp.driver.UsbSerialPort;
@@ -17,72 +17,62 @@ import com.apps.meks.arduinoapp.driver.UsbSerialProber;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private EditText eingabeEditText;
-    private TextView ausgabeTextView;
-    private TextView ausgabeTextView2;
     private Button sendButton;
-    private Button sendAButton;
-    private final String TAG = MainActivity.class.getSimpleName();
+    private ListView listview;
+    private List<String> list = new ArrayList<>();
+    private ArrayAdapter<String> adapter;
+    private int i = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         eingabeEditText = (EditText) findViewById(R.id.eingabe);
-        ausgabeTextView = (TextView) findViewById(R.id.ausgabeTextView);
-        ausgabeTextView2 = (TextView) findViewById(R.id.ausgabe2TextView);
         sendButton = (Button) findViewById(R.id.sendButton);
-        sendAButton = (Button) findViewById(R.id.sendAButton);
-
-
-
+        listview = (ListView) findViewById(R.id.listview);
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, list);
+        listview.setAdapter(adapter);
 
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getData();
+                sendData();
             }
         });
-
-        sendAButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendA();
-            }
-        });
-
     }
 
-    private void sendA() {
+    private void sendData() {
+
+        // Find all available drivers from attached devices.
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+
         if (availableDrivers.isEmpty()) {
-            ausgabeTextView.setText("NO DEVICES ATTACHED");
+            i++;
+            list.add(0, new String(i + ". " + "NO DEVICES ATTACHED"));
+            adapter.notifyDataSetChanged();
             return;
         }
+
         // Open a connection to the first available driver.
         UsbSerialDriver driver = availableDrivers.get(0);
         UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
         if (connection == null) {
-            // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
             return;
         }
 
-        //ERM
-        String userInput = "A";
+        String userInput = eingabeEditText.getText().toString();
         byte[] b = new byte[0];
         try {
             b = userInput.getBytes("US-ASCII");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        ausgabeTextView2.setText(String.valueOf(b));
-
-
-        //byte[] b = new byte['A'];
 
         try{
             UsbSerialPort port = driver.getPorts().get(0);
@@ -90,49 +80,18 @@ public class MainActivity extends AppCompatActivity {
             port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
             port.write(b,1);
 
-            byte buffer[] = new byte[16];
-            port.read(buffer, 1);
+            byte buffer[] = new byte[30];
+            port.read(buffer, 1000);
+            i++;
+            String sBuffer = new String(buffer);
+            String result = new String(i + ". " + sBuffer);
+            list.add(0, result);
 
-            String result = new String(buffer);
-            ausgabeTextView.setText(result);
         }catch (IOException e){
-            ausgabeTextView.setText("Fehler beim Write");
+            i++;
+            list.add(0, new String(i + ". " + "Fehler beim Senden der Daten"));
+
         }
-
-
-    }
-
-    private void getData() {
-        // Find all available drivers from attached devices.
-        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
-        if (availableDrivers.isEmpty()) {
-            ausgabeTextView.setText("NO DEVICES ATTACHED");
-            return;
-        }
-
-        // Open a connection to the first available driver.
-        UsbSerialDriver driver = availableDrivers.get(0);
-        UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
-        if (connection == null) {
-            // You probably need to call UsbManager.requestPermission(driver.getDevice(), ..)
-            return;
-        }
-
-        // Read some data! Most have just one port (port 0).
-        UsbSerialPort port = driver.getPorts().get(0);
-        try {
-            port.open(connection);
-            port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
-
-            byte buffer[] = new byte[16];
-            int numBytesRead = port.read(buffer, 1000);
-            ausgabeTextView.setText("Read " + numBytesRead + " bytes.");
-            Log.d(TAG, "Read " + numBytesRead + " bytes.");
-        } catch (IOException e) {
-            Log.e(TAG, "Error!");
-        } finally {
-            //port.close();
-        }
+        adapter.notifyDataSetChanged();
     }
 }
