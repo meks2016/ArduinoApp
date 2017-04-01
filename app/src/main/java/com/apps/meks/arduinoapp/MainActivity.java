@@ -91,9 +91,10 @@ public class MainActivity extends AppCompatActivity {
             port.write(b,1);
 
             byte buffer[] = new byte[16];
-            int numBytesRead = port.read(buffer, 1);
+            port.read(buffer, 1);
 
-            ausgabeTextView.setText("Read " + String.valueOf(numBytesRead) + " bytes.");
+            String result = new String(buffer);
+            ausgabeTextView.setText(result);
         }catch (IOException e){
             ausgabeTextView.setText("Fehler beim Write");
         }
